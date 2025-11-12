@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class ArquivoEspaco {
 
@@ -59,15 +60,19 @@ public class ArquivoEspaco {
         ArrayList<Espaco> espacos = lerLista();
         int novoId = lerProximoId();
 
-        espacos.add(new Espaco(novoId, piso, area));
+        Espaco novoEspaco = new Espaco();
+        novoEspaco.setPiso(piso);
+        novoEspaco.setArea(area);
+
+        espacos.add(novoEspaco);
         salvarLista(espacos);
 
         salvarProximoId(novoId + 1);
     }
 
-    public static void excluirEspaco(int id) {
+    public static void excluirEspaco(Long id) {
         ArrayList<Espaco> espacos = lerLista();
-        boolean removido = espacos.removeIf(espaco -> espaco.getId() == id);
+        boolean removido = espacos.removeIf(espaco -> Objects.equals(espaco.getId(), id));
 
         if (removido) {
             salvarLista(espacos);
@@ -76,11 +81,11 @@ public class ArquivoEspaco {
             System.out.println("O ID do espaço não foi encontrado.");
         }
     }
-    public static void editarEspaco(int id, int novoPiso, double novaArea){
+    public static void editarEspaco(Long id, int novoPiso, double novaArea){
         ArrayList<Espaco> espacos = lerLista();
         boolean encontrado = false;
         for (Espaco espaco : espacos) {
-            if (espaco.getId() == id) {
+            if (Objects.equals(espaco.getId(), id)) {
                 espaco.setPiso(novoPiso);
                 espaco.setArea(novaArea);
                 encontrado = true;

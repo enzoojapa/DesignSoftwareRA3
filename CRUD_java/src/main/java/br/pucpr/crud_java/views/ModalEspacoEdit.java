@@ -65,7 +65,7 @@ public class ModalEspacoEdit {
         btnSalvar.setMaxWidth(Double.MAX_VALUE);
         btnSalvar.setOnAction(e -> {
             try {
-                int id = espaco.getId();
+                Long id = espaco.getId();
                 double novaArea = Double.parseDouble(txtArea.getText().replace(',', '.'));
                 int novoPiso = Integer.parseInt(txtPiso.getText());
 

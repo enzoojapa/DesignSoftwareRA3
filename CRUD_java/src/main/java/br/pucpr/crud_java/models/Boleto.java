@@ -1,24 +1,30 @@
 package br.pucpr.crud_java.models;
 
+import jakarta.persistence.*;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
 
+@Entity
 public class Boleto implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private int numeroDocumento;
     private double valor;
     private LocalDate vencimento;
     private String cedente;
     private String banco;
     private String linhaDigitavel;
+    @ManyToOne
+    @JoinColumn(name = "contrato_id")
     private Contrato contrato;
 
-    public Boleto(double valor, LocalDate vencimento,
-                  String cedente, String banco, String linhaDigitavel,
-                  Contrato contrato) {
+    public Boleto() {
         this.valor = valor;
         this.vencimento = vencimento;
         this.cedente = cedente;

@@ -1,29 +1,34 @@
 package br.pucpr.crud_java.models;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+
 import java.io.Serial;
 import java.io.Serializable;
 
+@Entity
 public class Espaco implements Serializable {
     @Serial
     private static final long serialVersionUIDn = 1L;
 
-    private int id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private int piso;
     private double area;
     private boolean espacoStatus;
 
-    public Espaco(int id,int piso, double area) {
-        this.id = id;
-        this.piso = piso;
-        this.area = area;
+    public Espaco() {
     }
 
     @Override
     public String toString() { return "Piso: " + this.piso + " Area: " + this.area; }
 
-    public int getId() {return id;}
+    public Long getId() {return id;}
 
-    public void setId(int id) {this.id = id;}
+    public void setId(Long id) {this.id = id;}
 
     public int getPiso() {return piso;}
 

@@ -106,7 +106,10 @@ public class LojaView {
                     throw new IllegalArgumentException("Já existe uma loja com o mesmo nome ou telefone.");
                 }
 
-                Loja novaLoja = new Loja(nome, telefone, tipo);
+                Loja novaLoja = new Loja();
+                novaLoja.setLojaNome(nome);
+                novaLoja.setLojaTelefone(telefone);
+                novaLoja.setLojaTipo(tipo);
                 ArquivoLoja.adicionarLoja(novaLoja);
                 lojasObservable.add(novaLoja);
 

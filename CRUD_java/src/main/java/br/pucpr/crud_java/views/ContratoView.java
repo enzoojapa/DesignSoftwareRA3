@@ -141,8 +141,11 @@ public class ContratoView {
                     throw new IllegalArgumentException("Nome e Data de Início são obrigatórios.");
                 }
 
-                Contrato novoContrato = new Contrato(empresa, dataInicio,
-                        valorMensal, status);
+                Contrato novoContrato = new Contrato();
+                novoContrato.setLocatario(empresa);
+                novoContrato.setDataInicio(dataInicio);
+                novoContrato.setValorMensal(valorMensal);
+                novoContrato.setContratoStatus(status);
 
                 ArquivoContrato.adicionarContrato(novoContrato);
 
@@ -150,9 +153,14 @@ public class ContratoView {
                     LocalDate vencimento = dataInicio.plusMonths(i);
                     linhaDigNum = linhaDigNum.add(BigInteger.ONE);
                     linhaDig = linhaDigNum.toString();
-                    ArquivoBoleto.adicionarBoleto(new Boleto(3000, vencimento,
-                            "Tijucas Open", "Banco do Brasil", linhaDig,
-                            novoContrato), novoContrato.getContratoId());
+                    Boleto novoBoleto = new Boleto();
+                    novoBoleto.setValor(3000);
+                    novoBoleto.setVencimento(vencimento);
+                    novoBoleto.setCedente("Tijucas Open");
+                    novoBoleto.setBanco("Banco do Brasil");
+                    novoBoleto.setLinhaDigitavel(linhaDig);
+                    novoBoleto.setContrato(novoContrato);
+                    ArquivoBoleto.adicionarBoleto(novoBoleto, novoContrato.getContratoId());
                 }
                 boletos = ArquivoBoleto.lerLista(novoContrato.getContratoId());
                 novoContrato.setBoletos(boletos);

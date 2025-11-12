@@ -111,7 +111,11 @@ public class LocatarioView {
                     return;
                 }
 
-                Locatario novoLocatario = new Locatario(cnpj, nome, email, telefone);
+                Locatario novoLocatario = new Locatario();
+                novoLocatario.setLocatarioCnpj(cnpj);
+                novoLocatario.setLocatarioNome(nome);
+                novoLocatario.setLocatarioEmail(email);
+                novoLocatario.setLocatarioTelefone(telefone);
 
                 if (ArquivoLocatario.adicionarLocatario(novoLocatario)) {
                     locatariosObservable.add(novoLocatario);

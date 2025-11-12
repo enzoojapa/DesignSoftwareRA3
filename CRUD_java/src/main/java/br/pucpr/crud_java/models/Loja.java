@@ -1,20 +1,26 @@
 package br.pucpr.crud_java.models;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+
 import java.io.Serial;
 import java.io.Serializable;
 
+@Entity
 public class Loja implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private String lojaNome;
     private String lojaTelefone;
     private String lojaTipo;
 
-    public Loja(String lojaNome, String lojaTelefone, String lojaTipo) {
-        this.lojaNome = lojaNome;
-        this.lojaTelefone = lojaTelefone;
-        this.lojaTipo = lojaTipo;
+    public Loja() {
     }
 
     @Override

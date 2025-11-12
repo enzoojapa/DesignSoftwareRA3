@@ -1,27 +1,29 @@
 package br.pucpr.crud_java.models;
+import jakarta.persistence.*;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
 
+@Entity
 public class Contrato implements Serializable{
     @Serial
     private static final long serialVersionUID = 1L;
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private int contratoId;
-    private Locatario locatario;
     private LocalDate dataInicio;
     private double valorMensal;
     private boolean contratoStatus;
     private ArrayList<Boleto> boletos;
+    @ManyToOne
+    @JoinColumn(name = "locatario_id")
+    private Locatario locatario;
 
-    public Contrato(Locatario locatario, LocalDate dataInicio,
-                    double valorMensal, boolean ContratoStatus) {
-        this.locatario = locatario;
-        this.dataInicio = dataInicio;
-        this.valorMensal = valorMensal;
-        this.contratoStatus = ContratoStatus;
-        this.boletos = new ArrayList<>();
+    public Contrato() {
     }
 
     public int getContratoId() {

@@ -1,23 +1,27 @@
 package br.pucpr.crud_java.models;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+
 import java.io.Serial;
 import java.io.Serializable;
 
-
+@Entity
 public class Locatario implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private String locatarioCnpj;
     private String locatarioNome;
     private String locatarioTelefone;
     private String locatarioEmail;
 
-    public Locatario(String cnpj, String nome, String email, String telefone) {
-        locatarioCnpj = cnpj;
-        locatarioNome = nome;
-        locatarioEmail = email;
-        locatarioTelefone = telefone;
+    public Locatario() {
     }
 
     public String getLocatarioCnpj() {

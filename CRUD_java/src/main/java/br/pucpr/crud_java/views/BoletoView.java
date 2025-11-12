@@ -103,9 +103,13 @@ public class BoletoView {
                                 !linhaDig.isEmpty() && linhaDig.matches("\\d" +
                                 "{1,13}") && contrato != null) {
 
-                            Boleto novoBoleto =
-                                    new Boleto(valor, vencimento, cedente,
-                                            banco, linhaDig, contrato);
+                            Boleto novoBoleto = new Boleto();
+                            novoBoleto.setValor(valor);
+                            novoBoleto.setVencimento(vencimento);
+                            novoBoleto.setCedente(cedente);
+                            novoBoleto.setBanco(banco);
+                            novoBoleto.setLinhaDigitavel(linhaDig);
+                            novoBoleto.setContrato(contrato);
                             ArquivoBoleto.adicionarBoleto(novoBoleto,
                                     contrato.getContratoId());
                             boletosObservable.setAll(ArquivoBoleto.lerLista(contrato.getContratoId()));
