@@ -81,9 +81,8 @@ public class ArquivoContrato {
         ArrayList<Contrato> contratos = lerLista();
         int novoId = lerProximoId();
 
-        novoContrato.setContratoId(novoId);
         for (Contrato c : contratos) {
-            if (novoContrato.getContratoId() == c.getContratoId()) {
+            if (novoContrato.getId() == c.getId()) {
                 System.out.println("ID do contrato já cadastrado. Contrato não adicionado.");
                 return;
             }
@@ -95,11 +94,11 @@ public class ArquivoContrato {
     }
 
 
-    public static void removerContrato(int contratoId){
+    public static void removerContrato(Long contratoId){
         ArrayList<Contrato> contratos = lerLista();
         boolean removido = false;
         for (Contrato c : contratos){
-            if (c.getContratoId() == contratoId) {
+            if (c.getId() == contratoId) {
                 contratos.remove(c);
                 removido = true;
                 break;
@@ -117,7 +116,7 @@ public class ArquivoContrato {
     public static void atualizarContrato(Contrato contratoAtualizado) {
         ArrayList<Contrato> contratos = lerLista();
         for (int i = 0; i < contratos.size(); i++) {
-            if (contratos.get(i).getContratoId() == contratoAtualizado.getContratoId()) {
+            if (contratos.get(i).getId() == contratoAtualizado.getId()) {
                 contratos.set(i, contratoAtualizado);
                 break;
             }

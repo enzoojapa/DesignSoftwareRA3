@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static javafx.collections.FXCollections.observableArrayList;
@@ -47,7 +48,7 @@ public class ContratoView {
         stage.setTitle("Gestão de Contratos");
 
         ArrayList<Contrato> contratos = ArquivoContrato.lerLista();
-        ArrayList<Locatario> locatarios = ArquivoLocatario.lerLista();
+        List<Locatario> locatarios = ArquivoLocatario.lerLista();
         contratosObservable.setAll(contratos);
 
         BorderPane borderPane = new BorderPane();
@@ -160,9 +161,9 @@ public class ContratoView {
                     novoBoleto.setBanco("Banco do Brasil");
                     novoBoleto.setLinhaDigitavel(linhaDig);
                     novoBoleto.setContrato(novoContrato);
-                    ArquivoBoleto.adicionarBoleto(novoBoleto, novoContrato.getContratoId());
+                    ArquivoBoleto.adicionarBoleto(novoBoleto, novoContrato.getId());
                 }
-                boletos = ArquivoBoleto.lerLista(novoContrato.getContratoId());
+                boletos = ArquivoBoleto.lerLista(novoContrato.getId());
                 novoContrato.setBoletos(boletos);
                 ArquivoContrato.atualizarContrato(novoContrato);
 
@@ -194,8 +195,7 @@ public class ContratoView {
             Alert confirmacao = new Alert(Alert.AlertType.CONFIRMATION, "Tem certeza que deseja remover o contrato selecionado?", ButtonType.YES, ButtonType.NO);
             confirmacao.showAndWait().ifPresent(resposta -> {
                 if (resposta == ButtonType.YES) {
-                    ArquivoContrato.removerContrato(
-                            contratoSelecionado.getContratoId());
+                    ArquivoContrato.removerContrato(contratoSelecionado.getId());
                     contratosObservable.remove(contratoSelecionado);
                     exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Contrato removido com sucesso!");
                 }

@@ -2,15 +2,10 @@ package br.pucpr.crud_java.models;
 
 import jakarta.persistence.*;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.time.LocalDate;
 
 @Entity
-public class Boleto implements Serializable {
-    @Serial
-    private static final long serialVersionUID = 1L;
-
+public class Boleto {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,12 +20,6 @@ public class Boleto implements Serializable {
     private Contrato contrato;
 
     public Boleto() {
-        this.valor = valor;
-        this.vencimento = vencimento;
-        this.cedente = cedente;
-        this.banco = banco;
-        this.linhaDigitavel = linhaDigitavel;
-        this.contrato = contrato;
     }
 
     @Override

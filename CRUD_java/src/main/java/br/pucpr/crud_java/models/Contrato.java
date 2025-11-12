@@ -7,14 +7,10 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 
 @Entity
-public class Contrato implements Serializable{
-    @Serial
-    private static final long serialVersionUID = 1L;
-
+public class Contrato {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private int contratoId;
     private LocalDate dataInicio;
     private double valorMensal;
     private boolean contratoStatus;
@@ -26,12 +22,12 @@ public class Contrato implements Serializable{
     public Contrato() {
     }
 
-    public int getContratoId() {
-        return contratoId;
+    public Long getId() {
+        return id;
     }
 
-    public void setContratoId(int contratoId) {
-        this.contratoId = contratoId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Locatario getLocatario() {

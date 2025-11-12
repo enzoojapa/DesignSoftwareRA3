@@ -86,7 +86,7 @@ public class ModalBoletoEdit {
 
                                 ArquivoBoleto.editarBoleto(numDoc, valor,
                                         vencimento, cedente, banco, linhaDig,
-                                        contrato.getContratoId());
+                                        contrato.getId());
 
                                 Alerts.alertInfo("Editado",
                                         "Boleto editado com sucesso");

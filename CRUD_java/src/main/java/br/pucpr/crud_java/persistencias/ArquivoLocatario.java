@@ -1,96 +1,86 @@
 package br.pucpr.crud_java.persistencias;
 
 import br.pucpr.crud_java.models.Locatario;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
+import jakarta.persistence.Query;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ArquivoLocatario {
-    private static final String CAMINHO_ARQUIVO = "locatarios.dat";
 
-    public static void salvarLista(ArrayList<Locatario> locatarios){
-        try {
-            File arquivo = new File(CAMINHO_ARQUIVO);
-            if (!arquivo.exists()){
-                arquivo.createNewFile();
-            }
-            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(arquivo));
-            oos.writeObject(locatarios);
-            oos.close();
+    public static void salvarLista(List<Locatario> locatarios){
+            EntityManagerFactory emf = Persistence.createEntityManagerFactory("SistemaGestaoPU");
+            EntityManager em = emf.createEntityManager();
+            em.getTransaction().begin();
+            em.persist(locatarios);
+            em.getTransaction().commit();
+            em.close();
+            emf.close();
             System.out.println("Lista de locatarios salva com sucesso!");
-        } catch (FileNotFoundException e){
-            System.err.println("Erro ao salvar lista: " + e.getMessage());
-        } catch (IOException e){
-            System.err.println("Erro ao salvar lista: " + e.getMessage());
-        }
     }
 
-    public static ArrayList<Locatario> lerLista(){
-        ArrayList<Locatario> lista = new ArrayList<>();
-        try {
-            File arquivo = new File(CAMINHO_ARQUIVO);
-            if (arquivo.exists()) {
-                ObjectInputStream ois = new ObjectInputStream(new FileInputStream(CAMINHO_ARQUIVO));
-                lista = (ArrayList<Locatario>) ois.readObject();
-                ois.close();
-            }
-        } catch (ClassNotFoundException e){
-            System.err.println("Erro ao ler lista: " + e.getMessage());
-        } catch (IOException e) {
-            System.err.println("Erro ao ler lista: " + e.getMessage());
-        }
+    public static List<Locatario> lerLista(){
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("SistemaGestaoPU");
+        EntityManager em = emf.createEntityManager();
+        Query query = em.createQuery("select l from Locatario l");
+        List<Locatario> lista = query.getResultList();
+        em.close();
+        emf.close();
         return lista;
     }
 
 
     public static boolean adicionarLocatario(Locatario novoLocatario) {
-        ArrayList<Locatario> locatarios = lerLista();
-
+        List<Locatario> locatarios = lerLista();
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("SistemaGestaoPU");
+        EntityManager em = emf.createEntityManager();
+        em.getTransaction().begin();
         for (Locatario loc : locatarios) {
             if (loc.getLocatarioCnpj().equals(novoLocatario.getLocatarioCnpj())) {
                 System.out.println("CNPJ já cadastrado. Locatário não adicionado.");
                 return false;
             }
         }
-
-        locatarios.add(novoLocatario);
-        salvarLista(locatarios);
+        em.getTransaction().commit();
+        em.close();
+        emf.close();
         return true;
     }
 
     public static void editarLocatario(String cnpj, String novoNome, String novoEmail, String novoTelefone) {
-        ArrayList<Locatario> locatarios = lerLista();
-        for (Locatario loc : locatarios) {
-            if (cnpj != null && cnpj.equals(loc.getLocatarioCnpj())) {
-                loc.setLocatarioNome(novoNome);
-                loc.setLocatarioEmail(novoEmail);
-                loc.setLocatarioTelefone(novoTelefone);
-                salvarLista(locatarios);
-                System.out.println("Locatário atualizado com sucesso!");
-                return;
-            }
-        }
-        System.out.println("CNPJ não encontrado. Nenhuma alteração feita.");
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("SistemaGestaoPU");
+        EntityManager em = emf.createEntityManager();
+        em.getTransaction().begin();
+
+        Query query = em.createQuery("select l from Locatario l where l.locatarioCnpj = :cnpj");
+        query.setParameter("cnpj", cnpj);
+        Locatario locatario = (Locatario) query.getSingleResult();
+        locatario.setLocatarioNome(novoNome);
+        locatario.setLocatarioEmail(novoEmail);
+        locatario.setLocatarioTelefone(novoTelefone);
+
+        em.getTransaction().commit();
+        em.close();
+        emf.close();
     }
 
 
     public static void removerLocatario(String cnpj) {
-        ArrayList<Locatario> locatarios = lerLista();
-        boolean removido = false;
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("SistemaGestaoPU");
+        EntityManager em = emf.createEntityManager();
+        em.getTransaction().begin();
 
-        for (Locatario loc : locatarios) {
-            if (cnpj != null && cnpj.equals(loc.getLocatarioCnpj())) {
-                locatarios.remove(loc);
-                removido = true;
-                break;
-            }
+        Query query = em.createQuery("select l from Locatario l where l.locatarioCnpj = :cnpj");
+        query.setParameter("cnpj", cnpj);
+        Locatario locatario = (Locatario) query.getSingleResult();
+        em.remove(locatario);
 
-        }
-        if (removido) {
-            salvarLista(locatarios);
-            System.out.println("Locatário removido com sucesso!");
-        } else {
-            System.out.println("CNPJ não encontrado. Nenhuma remoção feita.");
-        }
+        em.getTransaction().commit();
+        em.close();
+        emf.close();
     }
 }

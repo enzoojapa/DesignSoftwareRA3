@@ -9,10 +9,7 @@ import java.io.Serial;
 import java.io.Serializable;
 
 @Entity
-public class Locatario implements Serializable {
-    @Serial
-    private static final long serialVersionUID = 1L;
-
+public class Locatario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -45,12 +45,12 @@ public class ArquivoBoleto {
         }
     }
 
-    public static ArrayList<Boleto> lerLista(int contratoId){
+    public static ArrayList<Boleto> lerLista(Long contratoId){
         ArrayList<Contrato> contratos = ArquivoContrato.lerLista();
         ArrayList<Boleto> boletosContrato = new ArrayList<>();
         try {
             for (Contrato c : contratos){
-                if (c.getContratoId() == contratoId){
+                if (c.getId() == contratoId){
                     boletosContrato = c.getBoletos();
                 }
             }
@@ -60,13 +60,13 @@ public class ArquivoBoleto {
         return boletosContrato;
     }
 
-    public static void adicionarBoleto(Boleto novoBoleto, int contratoId) {
+    public static void adicionarBoleto(Boleto novoBoleto, Long contratoId) {
         ArrayList<Contrato> contratos = ArquivoContrato.lerLista();
         int novoNumDoc = lerProximoNum();
 
 
         for (Contrato c : contratos) {
-            if (c.getContratoId() == contratoId){
+            if (c.getId() == contratoId){
                 for (Boleto b : c.getBoletos()){
                     if (novoBoleto.getNumeroDocumento() == b.getNumeroDocumento()){
                         System.out.println("Boleto já existente!");
@@ -82,12 +82,12 @@ public class ArquivoBoleto {
         ArquivoContrato.salvarLista(contratos);
     }
 
-    public static void removerBoleto(int numeroDocumento, int contratoId) {
+    public static void removerBoleto(int numeroDocumento, Long contratoId) {
         try {
             ArrayList<Contrato> contratos = ArquivoContrato.lerLista();
             boolean removido  = false;
             for (Contrato c : contratos) {
-                if (c.getContratoId() == contratoId) {
+                if (c.getId() == contratoId) {
                     c.getBoletos().removeIf(
                             b -> b.getNumeroDocumento() == numeroDocumento);
                     removido = true;
@@ -111,12 +111,12 @@ public class ArquivoBoleto {
                                     double valor,
                                     LocalDate vencimento, String cedente,
                                     String banco, String linhaDigitavel,
-                                    int contratoId){
+                                    Long contratoId){
         try {
             ArrayList<Contrato> contratos = ArquivoContrato.lerLista();
 
             for (Contrato c : contratos) {
-                if (c.getContratoId() == contratoId) {
+                if (c.getId() == contratoId) {
                     ArrayList<Boleto> boletos = c.getBoletos();
                     for (Boleto b : boletos) {
                         if (b.getNumeroDocumento() == numeroDocumento) {

@@ -9,10 +9,7 @@ import java.io.Serial;
 import java.io.Serializable;
 
 @Entity
-public class Espaco implements Serializable {
-    @Serial
-    private static final long serialVersionUIDn = 1L;
-
+public class Espaco {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

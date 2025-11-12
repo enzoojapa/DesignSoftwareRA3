@@ -111,8 +111,8 @@ public class BoletoView {
                             novoBoleto.setLinhaDigitavel(linhaDig);
                             novoBoleto.setContrato(contrato);
                             ArquivoBoleto.adicionarBoleto(novoBoleto,
-                                    contrato.getContratoId());
-                            boletosObservable.setAll(ArquivoBoleto.lerLista(contrato.getContratoId()));
+                                    contrato.getId());
+                            boletosObservable.setAll(ArquivoBoleto.lerLista(contrato.getId()));
                             Alerts.alertInfo("Cadastrado",
                                     "Boleto cadastrado com sucesso");
                             txtVal.clear();
@@ -135,7 +135,7 @@ public class BoletoView {
         Button btnAtualizar = new Button("Atualizar página");
         btnAtualizar.setMaxWidth(Double.MAX_VALUE);
         btnAtualizar.setOnAction(e -> {
-            boletosObservable.setAll(ArquivoBoleto.lerLista(contrato.getContratoId()));
+            boletosObservable.setAll(ArquivoBoleto.lerLista(contrato.getId()));
         });
 
 
@@ -163,7 +163,7 @@ public class BoletoView {
                     confirmacao.showAndWait().ifPresent(resposta -> {
                         if (resposta == ButtonType.YES) {
                             ArquivoBoleto.removerBoleto(
-                                    boletoSelecionado.getNumeroDocumento(), boletoSelecionado.getContrato().getContratoId());
+                                    boletoSelecionado.getNumeroDocumento(), boletoSelecionado.getContrato().getId());
                             boletosObservable.remove(boletoSelecionado);
                             exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Boleto removido com sucesso!");
                         }
@@ -186,7 +186,7 @@ public class BoletoView {
                 if (boletoSelecionado != null){
                     new ModalBoletoEdit(stage, boletoSelecionado,
                             contrato).mostrar();
-                    boletosObservable.setAll(ArquivoBoleto.lerLista(contrato.getContratoId()));
+                    boletosObservable.setAll(ArquivoBoleto.lerLista(contrato.getId()));
                 } else {
                     Alerts.alertError("Erro", "Selecione um boleto para " +
                             "editar");
@@ -282,7 +282,7 @@ public class BoletoView {
     }
 
     private void atualizarTabelaBoletos() {
-        boletosObservable.setAll(ArquivoBoleto.lerLista(contrato.getContratoId()));
+        boletosObservable.setAll(ArquivoBoleto.lerLista(contrato.getId()));
         // A TableView se atualizará automaticamente pois está vinculada (bound) a boletosObservable
     }
 
