@@ -11,6 +11,8 @@
         <class>br.pucpr.crud_java.models.Espaco</class>
         <class>br.pucpr.crud_java.models.Locatario</class>
         <class>br.pucpr.crud_java.models.Loja</class>
+        <class>br.pucpr.crud_java.models.Cargo</class>
+        <class>br.pucpr.crud_java.models.Funcionario</class>
 
         <properties>
             <property name="jakarta.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>

@@ -16,6 +16,15 @@ public class Cargo {
 
     public Cargo() {}
 
+    @Override
+    public String toString() {
+        return "Cargo{" +
+                "id=" + id +
+                ", nome='" + nome + '\'' +
+                ", descricao='" + descricao + '\'' +
+                '}';
+    }
+
     public Long getId() {
         return id;
     }

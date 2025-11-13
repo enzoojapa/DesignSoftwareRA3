@@ -1,9 +1,6 @@
 package br.pucpr.crud_java.models;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -22,6 +19,9 @@ public class Funcionario implements Serializable {
     private Double salario;
     private String telefone;
     private String email;
+    @ManyToOne
+    @JoinColumn(name = "cargo_id")
+    private Cargo cargo;
 
     public Funcionario() {}
 
@@ -84,4 +84,8 @@ public class Funcionario implements Serializable {
     public void setEmail(String email) {
         this.email = email;
     }
+
+    public Cargo getCargo() { return cargo; }
+
+    public void setCargo(Cargo cargo) { this.cargo = cargo; }
 }
