@@ -6,17 +6,14 @@ import jakarta.persistence.EntityManager;
 import java.util.List;
 
 public class CargoDAO {
-    public Cargo salvar(Cargo cargo) {
+    public void criar(Cargo cargo) {
         EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
         em.getTransaction().begin();
 
         try {
-
-            Cargo salvo = em.merge(cargo);
-
+            em.persist(cargo);
             em.getTransaction().commit();
-            System.out.println("Cargo salvo com sucesso! ID: " + salvo.getId());
-            return salvo;
+            System.out.println("Cargo salvo com sucesso! ID: " + cargo.getId());
 
         } catch (Exception e) {
             if (em.getTransaction().isActive()) em.getTransaction().rollback();
@@ -43,6 +40,33 @@ public class CargoDAO {
         EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
         try {
             return em.find(Cargo.class, id);
+        } finally {
+            em.close();
+        }
+    }
+
+    public void editar(Long id, Cargo cargo) {
+        EntityManager em = JPAUtil.getEntityManagerFactory().createEntityManager();
+
+        try {
+            em.getTransaction().begin();
+            Cargo cargoEncontrado = em.find(Cargo.class, id);
+
+            if (cargoEncontrado != null) {
+                cargoEncontrado.setId(cargo.getId());
+                cargoEncontrado.setNome(cargo.getNome());
+                cargoEncontrado.setDescricao(cargo.getDescricao());
+                em.getTransaction().commit();
+                System.out.println("Cargo removido com sucesso! ID: " + id);
+            } else {
+                em.getTransaction().rollback();
+                System.out.println("Cargo com ID " + id + " não encontrado.");
+            }
+
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) em.getTransaction().rollback();
+            System.err.println("Erro ao remover cargo: " + e.getMessage());
+            throw new RuntimeException("Erro ao remover cargo", e);
         } finally {
             em.close();
         }
