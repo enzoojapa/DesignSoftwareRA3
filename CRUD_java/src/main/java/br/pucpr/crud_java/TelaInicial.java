@@ -73,7 +73,11 @@ public class TelaInicial {
         btnEspacos.setStyle(styleBtn);
         btnEspacos.setOnAction(e -> new EspacoView(stage).mostrar());
 
-        navBar.getChildren().addAll(btnHome, btnLocatarios, btnContratos, btnLojas, btnEspacos);
+        Button btnFuncionarios = new Button("Funcionários");
+        btnFuncionarios.setStyle(styleBtn);
+        btnFuncionarios.setOnAction(e -> new FuncionarioView(stage).mostrar());
+
+        navBar.getChildren().addAll(btnHome, btnLocatarios, btnContratos, btnLojas, btnEspacos, btnFuncionarios);
         return navBar;
     }
 }

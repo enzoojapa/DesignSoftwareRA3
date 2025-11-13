@@ -9,8 +9,7 @@ module br.pucpr.crud_java {
     opens br.pucpr.crud_java to javafx.fxml;
     opens br.pucpr.crud_java.views to javafx.fxml;
 
-    // 👇 ESSENCIAL: libera o EclipseLink para acessar os campos privados das entidades
-    opens br.pucpr.crud_java.models to jakarta.persistence;
+    opens br.pucpr.crud_java.models;
 
     // Exportações normais
     exports br.pucpr.crud_java;
