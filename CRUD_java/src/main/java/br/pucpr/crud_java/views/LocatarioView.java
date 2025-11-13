@@ -243,7 +243,15 @@ public class LocatarioView {
         btnEspacos.setOnAction(e -> new EspacoView(stage).mostrar());
 
 
-        navBar.getChildren().addAll(btnHome, btnLocatarios, btnContratos, btnLojas, btnEspacos);
+        Button btnFuncionarios = new Button("Funcionários");
+        btnFuncionarios.setStyle(styleBtn);
+        btnFuncionarios.setOnAction(e -> new FuncionarioView(stage).mostrar());
+
+        Button btnCargos = new Button("Cargos");
+        btnCargos.setStyle(styleBtn);
+        btnCargos.setOnAction(e -> new CargoView(stage).mostrar());
+
+        navBar.getChildren().addAll(btnHome, btnLocatarios, btnContratos, btnLojas, btnEspacos, btnFuncionarios, btnCargos);
         return navBar;
     }
 

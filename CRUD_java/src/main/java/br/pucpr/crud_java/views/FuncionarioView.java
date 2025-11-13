@@ -257,9 +257,13 @@ public class FuncionarioView {
 
         Button btnFuncionarios = new Button("Funcionários");
         btnFuncionarios.setStyle(styleBtn);
-        btnFuncionarios.setOnAction(e -> this.mostrar());
+        btnFuncionarios.setOnAction(e -> new FuncionarioView(stage).mostrar());
 
-        navBar.getChildren().addAll(btnHome, btnLocatarios, btnContratos, btnLojas, btnEspacos, btnFuncionarios);
+        Button btnCargos = new Button("Cargos");
+        btnCargos.setStyle(styleBtn);
+        btnCargos.setOnAction(e -> new CargoView(stage).mostrar());
+
+        navBar.getChildren().addAll(btnHome, btnLocatarios, btnContratos, btnLojas, btnEspacos, btnFuncionarios, btnCargos);
         return navBar;
     }
 }

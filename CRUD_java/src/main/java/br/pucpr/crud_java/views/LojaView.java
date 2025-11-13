@@ -235,9 +235,15 @@ public class LojaView {
         btnEspacos.setStyle(styleBtn);
         btnEspacos.setOnAction(e -> new EspacoView(stage).mostrar());
 
+        Button btnFuncionarios = new Button("Funcionários");
+        btnFuncionarios.setStyle(styleBtn);
+        btnFuncionarios.setOnAction(e -> new FuncionarioView(stage).mostrar());
 
+        Button btnCargos = new Button("Cargos");
+        btnCargos.setStyle(styleBtn);
+        btnCargos.setOnAction(e -> new CargoView(stage).mostrar());
 
-        navBar.getChildren().addAll(btnHome, btnLocatarios, btnContratos, btnLojas, btnEspacos);
+        navBar.getChildren().addAll(btnHome, btnLocatarios, btnContratos, btnLojas, btnEspacos, btnFuncionarios, btnCargos);
         return navBar;
     }
 
