@@ -1,41 +1,46 @@
 package br.pucpr.crud_java.views;
+
 import br.pucpr.crud_java.TelaInicial;
 import br.pucpr.crud_java.alerts.Alerts;
 import br.pucpr.crud_java.models.Boleto;
 import br.pucpr.crud_java.models.Locatario;
-import br.pucpr.crud_java.persistencias.ArquivoBoleto;
-import br.pucpr.crud_java.persistencias.ArquivoLocatario;
-import br.pucpr.crud_java.views.LocatarioView;
-
 import br.pucpr.crud_java.models.Contrato;
-import br.pucpr.crud_java.persistencias.ArquivoContrato;
+import br.pucpr.crud_java.persistencias.BoletoDAO;
+import br.pucpr.crud_java.persistencias.ContratoDAO;
+import br.pucpr.crud_java.persistencias.LocatarioDAO;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static javafx.collections.FXCollections.observableArrayList;
 
 public class ContratoView {
 
-    private Stage stage;
-    private ObservableList<Contrato> contratosObservable = observableArrayList();
+    private final Stage stage;
+    private final ObservableList<Contrato> contratosObservable = observableArrayList();
+
+    // NOVO: Instâncias dos DAOs JPA
+    private final ContratoDAO contratoDAO;
+    private final LocatarioDAO locatarioDAO;
+    private final BoletoDAO boletoDAO;
 
     public ContratoView(Stage stage) {
         this.stage = stage;
+        this.contratoDAO = new ContratoDAO();
+        this.locatarioDAO = new LocatarioDAO();
+        this.boletoDAO = new BoletoDAO();
     }
 
     public void mostrar() {
@@ -46,8 +51,9 @@ public class ContratoView {
     private void criarUI() {
         stage.setTitle("Gestão de Contratos");
 
-        ArrayList<Contrato> contratos = ArquivoContrato.lerLista();
-        ArrayList<Locatario> locatarios = ArquivoLocatario.lerLista();
+        // CORRIGIDO: Usa o DAO JPA para buscar todos os contratos e locatários
+        List<Contrato> contratos = contratoDAO.buscarTodos();
+        List<Locatario> locatarios = locatarioDAO.buscarTodos();
         contratosObservable.setAll(contratos);
 
         BorderPane borderPane = new BorderPane();
@@ -65,14 +71,18 @@ public class ContratoView {
         ComboBox<String> locatarioComboBox = new ComboBox<>();
         locatarioComboBox.setPromptText("Selecione a empresa");
         Set<String> cnpjComContratos = new HashSet<>();
+
+        // Lógica de Locatários Disponíveis (Busca Locatários que NÃO têm contrato)
         for (Contrato c : contratos){
-            cnpjComContratos.add(c.getlocatario().getLocatarioCnpj());
+            // Assumindo que Locatario está populado via JPA
+            if (c.getLocatario() != null) {
+                cnpjComContratos.add(c.getLocatario().getLocatarioCnpj());
+            }
         }
         for (Locatario l : locatarios){
             if (!cnpjComContratos.contains(l.getLocatarioCnpj())){
                 locatarioComboBox.getItems().add(l.getLocatarioNome());
             }
-
         }
 
         Label labelDataInicio = new Label("Data de Início");
@@ -95,7 +105,8 @@ public class ContratoView {
         Button btnAtualizar = new Button("Atualizar página");
         btnAtualizar.setMaxWidth(Double.MAX_VALUE);
         btnAtualizar.setOnAction(e -> {
-            contratosObservable.setAll(ArquivoContrato.lerLista());
+            // CORRIGIDO: Usa o DAO JPA para ler lista
+            contratosObservable.setAll(contratoDAO.buscarTodos());
         });
 
         painelFormulario.getChildren().addAll(
@@ -125,11 +136,13 @@ public class ContratoView {
                 String valorTexto = txtValorMensal.getText().replace(",", ".");
                 double valorMensal = Double.parseDouble(valorTexto);
                 boolean status = checkStatus.isSelected();
-                ArrayList<Boleto> boletos = new ArrayList<>();
+
+                // Os boletos agora serão gerados e salvos via JPA
                 String linhaDig = "1000000000000";
                 BigInteger linhaDigNum = new BigInteger(linhaDig);
 
                 Locatario empresa = null;
+                // CORRIGIDO: Busca Locatário pela lista carregada (ou deve usar LocatarioDAO.buscarPorNome(nome))
                 for (Locatario l : locatarios){
                     if (nomeEmpresa.equals(l.getLocatarioNome())){
                         empresa = l;
@@ -138,7 +151,7 @@ public class ContratoView {
                 }
 
                 if (empresa == null || dataInicio == null) {
-                    throw new IllegalArgumentException("Nome e Data de Início são obrigatórios.");
+                    throw new IllegalArgumentException("Locatário e Data de Início são obrigatórios.");
                 }
 
                 Contrato novoContrato = new Contrato();
@@ -147,26 +160,41 @@ public class ContratoView {
                 novoContrato.setValorMensal(valorMensal);
                 novoContrato.setContratoStatus(status);
 
-                ArquivoContrato.adicionarContrato(novoContrato);
+                // 1. CORRIGIDO: Salva o Contrato no JPA (gera o ID Long)
+                contratoDAO.salvar(novoContrato);
 
+                // 2. Geração e Salvamento dos Boletos
                 for (int i = 1; i <= 12; i++) {
                     LocalDate vencimento = dataInicio.plusMonths(i);
                     linhaDigNum = linhaDigNum.add(BigInteger.ONE);
                     linhaDig = linhaDigNum.toString();
+
                     Boleto novoBoleto = new Boleto();
                     novoBoleto.setValor(3000);
                     novoBoleto.setVencimento(vencimento);
                     novoBoleto.setCedente("Tijucas Open");
                     novoBoleto.setBanco("Banco do Brasil");
                     novoBoleto.setLinhaDigitavel(linhaDig);
-                    novoBoleto.setContrato(novoContrato);
-                    ArquivoBoleto.adicionarBoleto(novoBoleto, novoContrato.getContratoId());
-                }
-                boletos = ArquivoBoleto.lerLista(novoContrato.getContratoId());
-                novoContrato.setBoletos(boletos);
-                ArquivoContrato.atualizarContrato(novoContrato);
 
-                contratosObservable.add(novoContrato);
+                    // CORRIGIDO: Salva o boleto associando-o ao Contrato ID via JPA
+                    // O método BoletoDAO.salvar(boleto, contratoId) cuida disso
+                    boletoDAO.salvar(novoBoleto, novoContrato.getContratoId());
+                }
+
+                // NOTA: No JPA, a lista de boletos DEVE ser recarregada do banco se precisar ser manipulada
+                // Não é necessário chamar ContratoDAO.atualizarContrato(novoContrato) aqui novamente
+                // a menos que você queira atualizar a lista de boletos dentro do objeto Contrato em memória.
+
+                // CORRIGIDO: Recarrega o objeto Contrato do banco para popular a lista de Boletos (lazy loading)
+                Contrato contratoAtualizado = contratoDAO.buscarPorId(novoContrato.getContratoId());
+
+                if (contratoAtualizado != null) {
+                    contratosObservable.add(contratoAtualizado);
+                } else {
+                    // Adiciona o objeto novo, mesmo sem a lista de boletos carregada em memória
+                    contratosObservable.add(novoContrato);
+                }
+
 
                 locatarioComboBox.setValue(null);
                 datePickerInicio.setValue(null);
@@ -175,27 +203,28 @@ public class ContratoView {
                 Alerts.alertInfo("Sucesso", "Contrato cadastrado com sucesso!");
 
             } catch (NumberFormatException ex) {
-                Alerts.alertError("Erro de Formato", "IDs " +
-                        "e Valor Mensal devem ser números válidos.");
+                Alerts.alertError("Erro de Formato", "Valor Mensal deve ser um número válido.");
             } catch (IllegalArgumentException ex) {
                 Alerts.alertError("Erro de Validação", ex.getMessage());
+            } catch (RuntimeException ex) {
+                Alerts.alertError("Erro de Persistência", "Falha ao salvar contrato/boletos: " + ex.getMessage());
             }
         });
 
         btnRemover.setOnAction(e -> {
             Contrato contratoSelecionado = contratoTable.getSelectionModel().getSelectedItem();
             if (contratoSelecionado == null) {
-                Alerts.alertWarning("Nenhuma Seleção", "Por favor, selecione um " +
-                        "contrato na " +
-                        "tabela para remover.");
+                Alerts.alertWarning("Nenhuma Seleção", "Por favor, selecione um contrato na tabela para remover.");
                 return;
             }
 
             Alert confirmacao = new Alert(Alert.AlertType.CONFIRMATION, "Tem certeza que deseja remover o contrato selecionado?", ButtonType.YES, ButtonType.NO);
             confirmacao.showAndWait().ifPresent(resposta -> {
                 if (resposta == ButtonType.YES) {
-                    ArquivoContrato.removerContrato(
-                            contratoSelecionado.getContratoId());
+
+                    // CORRIGIDO: Usa o DAO JPA para remover pelo ID Long
+                    contratoDAO.remover(contratoSelecionado.getContratoId());
+
                     contratosObservable.remove(contratoSelecionado);
                     exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Contrato removido com sucesso!");
                 }
@@ -224,13 +253,15 @@ public class ContratoView {
         this.stage.setScene(cena);
     }
 
+    // ... (O restante dos métodos auxiliares, como criarTabelaContratos, criarMenuNavegacao, exibirAlerta, e adicionarFiltroApenasNumeros) ...
+
     private TableView<Contrato> criarTabelaContratos() {
         TableView<Contrato> table = new TableView<>();
         table.setItems(contratosObservable);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         TableColumn<Contrato, String> colNomeEmpresa = new TableColumn<>("Nome Empresa");
-        colNomeEmpresa.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getlocatario().getLocatarioNome()));
+        colNomeEmpresa.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getLocatario().getLocatarioNome()));
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         TableColumn<Contrato, String> colDataInicio = new TableColumn<>("Data de Início");
@@ -276,7 +307,7 @@ public class ContratoView {
 
         Button btnContratos = new Button("Contratos");
         btnContratos.setStyle(styleBtn);
-        btnContratos.setOnAction(e -> this.mostrar()); // Recarrega a tela atual
+        btnContratos.setOnAction(e -> this.mostrar());
 
         Button btnLojas = new Button("Lojas");
         btnLojas.setStyle(styleBtn);

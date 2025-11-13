@@ -4,10 +4,7 @@ import br.pucpr.crud_java.TelaInicial;
 import br.pucpr.crud_java.alerts.Alerts;
 import br.pucpr.crud_java.models.Boleto;
 import br.pucpr.crud_java.models.Contrato;
-import br.pucpr.crud_java.models.Locatario;
-import br.pucpr.crud_java.persistencias.ArquivoBoleto;
-import br.pucpr.crud_java.persistencias.ArquivoContrato;
-import br.pucpr.crud_java.persistencias.ArquivoLocatario;
+import br.pucpr.crud_java.persistencias.BoletoDAO;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
@@ -20,20 +17,23 @@ import javafx.stage.Stage;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.List;
 
 import static javafx.collections.FXCollections.observableArrayList;
 
 public class BoletoView {
-    private Stage stage;
+    private final Stage stage;
     private Scene cena;
-    private Contrato contrato;
+    private final Contrato contrato;
 
-    private ObservableList<Boleto> boletosObservable = observableArrayList();
+    private final BoletoDAO boletoDAO;
+
+    private final ObservableList<Boleto> boletosObservable = observableArrayList();
 
     public BoletoView(Stage stage, Contrato contrato) {
         this.stage = stage;
         this.contrato = contrato;
+        this.boletoDAO = new BoletoDAO();
     }
 
     public void mostrar() {
@@ -47,21 +47,23 @@ public class BoletoView {
             System.err.println("Erro, contrato não fornecido!");
             return;
         }
-        ArrayList<Boleto> boletosDoContrato = contrato.getBoletos();
-        ArrayList<Contrato> contratos = ArquivoContrato.lerLista();
 
+        // NOVO: Lê a lista de boletos do JPA
+        List<Boleto> boletosDoContrato = boletoDAO.buscarPorContrato(contrato.getContratoId());
 
         boletosObservable.setAll(boletosDoContrato);
 
         BorderPane borderPane = new BorderPane();
         borderPane.setStyle("-fx-padding: 10;");
 
-        HBox navBar = criarMenuNavegacao();
+        HBox navBar = criarMenuNavegacao(); // MÉTODO AGORA PRESENTE
         borderPane.setTop(navBar);
 
         VBox painelFormulario = new VBox(10);
         painelFormulario.setStyle("-fx-padding: 10;");
         painelFormulario.setPrefWidth(250);
+
+        // ... (resto dos campos do formulário)
 
         Label labelVal = new Label("Valor");
         TextField txtVal = new TextField();
@@ -100,8 +102,7 @@ public class BoletoView {
                         String linhaDig = txtLinhaDig.getText();
 
                         if (valor >= 0 && vencimento != null &&
-                                !linhaDig.isEmpty() && linhaDig.matches("\\d" +
-                                "{1,13}") && contrato != null) {
+                                !linhaDig.isEmpty() && linhaDig.matches("\\d{1,13}") && contrato != null) {
 
                             Boleto novoBoleto = new Boleto();
                             novoBoleto.setValor(valor);
@@ -109,12 +110,13 @@ public class BoletoView {
                             novoBoleto.setCedente(cedente);
                             novoBoleto.setBanco(banco);
                             novoBoleto.setLinhaDigitavel(linhaDig);
-                            novoBoleto.setContrato(contrato);
-                            ArquivoBoleto.adicionarBoleto(novoBoleto,
-                                    contrato.getContratoId());
-                            boletosObservable.setAll(ArquivoBoleto.lerLista(contrato.getContratoId()));
-                            Alerts.alertInfo("Cadastrado",
-                                    "Boleto cadastrado com sucesso");
+
+                            // CHAMA O DAO JPA
+                            boletoDAO.salvar(novoBoleto, contrato.getContratoId());
+
+                            atualizarTabelaBoletos();
+
+                            Alerts.alertInfo("Cadastrado", "Boleto cadastrado com sucesso");
                             txtVal.clear();
                             txtLinhaDig.clear();
                         } else {
@@ -122,6 +124,8 @@ public class BoletoView {
                         }
                     } catch (NumberFormatException ex) {
                         Alerts.alertError("Erro", "Insira dados válidos!");
+                    } catch (RuntimeException ex) {
+                        exibirAlerta(Alert.AlertType.ERROR, "Erro de Persistência", "Falha ao salvar o boleto: " + ex.getMessage());
                     }
                 }
         );
@@ -135,7 +139,7 @@ public class BoletoView {
         Button btnAtualizar = new Button("Atualizar página");
         btnAtualizar.setMaxWidth(Double.MAX_VALUE);
         btnAtualizar.setOnAction(e -> {
-            boletosObservable.setAll(ArquivoBoleto.lerLista(contrato.getContratoId()));
+            atualizarTabelaBoletos();
         });
 
 
@@ -154,46 +158,47 @@ public class BoletoView {
         Button btnRemover = new Button("Remover Selecionado");
         btnRemover.setOnAction(e -> {
             try {
-                Boleto boletoSelecionado =
-                        boletosTable.getSelectionModel().getSelectedItem();
+                Boleto boletoSelecionado = boletosTable.getSelectionModel().getSelectedItem();
+
                 if (boletoSelecionado != null) {
-                    int numeroDocumento =
-                            boletoSelecionado.getNumeroDocumento();
+
+                    // MÉTODO getId() DEVE ESTAR PRESENTE NO MODEL Boleto
+                    Long boletoId = boletoSelecionado.getId();
+
                     Alert confirmacao = new Alert(Alert.AlertType.CONFIRMATION, "Tem certeza que deseja remover o boleto selecionado?", ButtonType.YES, ButtonType.NO);
                     confirmacao.showAndWait().ifPresent(resposta -> {
                         if (resposta == ButtonType.YES) {
-                            ArquivoBoleto.removerBoleto(
-                                    boletoSelecionado.getNumeroDocumento(), boletoSelecionado.getContrato().getContratoId());
+
+                            // CHAMA O DAO JPA
+                            boletoDAO.excluir(boletoId);
+
                             boletosObservable.remove(boletoSelecionado);
                             exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Boleto removido com sucesso!");
                         }
                     });
                 } else {
-                    Alerts.alertError("Erro", "Selecione um boleto para " +
-                            "apagar");
+                    Alerts.alertError("Erro", "Selecione um boleto para " + "apagar");
                 }
             } catch (NullPointerException ex) {
-                Alerts.alertError("Erro",
-                        "Nenhum boleto selecionado. Erro: " + ex.getMessage());
+                Alerts.alertError("Erro", "Nenhum boleto selecionado. Erro: " + ex.getMessage());
+            } catch (RuntimeException ex) {
+                exibirAlerta(Alert.AlertType.ERROR, "Erro de Persistência", "Falha ao remover o boleto: " + ex.getMessage());
             }
         });
 
         Button btnEditar = new Button("Editar Selecionado");
         btnEditar.setOnAction(e -> {
             try {
-                Boleto boletoSelecionado =
-                        boletosTable.getSelectionModel().getSelectedItem();
+                Boleto boletoSelecionado = boletosTable.getSelectionModel().getSelectedItem();
                 if (boletoSelecionado != null){
-                    new ModalBoletoEdit(stage, boletoSelecionado,
-                            contrato).mostrar();
-                    boletosObservable.setAll(ArquivoBoleto.lerLista(contrato.getContratoId()));
+                    new ModalBoletoEdit(stage, boletoSelecionado, contrato).mostrar();
+
+                    atualizarTabelaBoletos();
                 } else {
-                    Alerts.alertError("Erro", "Selecione um boleto para " +
-                            "editar");
+                    Alerts.alertError("Erro", "Selecione um boleto para " + "editar");
                 }
             } catch (NullPointerException ex){
-                Alerts.alertError("Erro",
-                        "Nenhum boleto selecionado. Erro: " + ex.getMessage());
+                Alerts.alertError("Erro", "Nenhum boleto selecionado. Erro: " + ex.getMessage());
             }
         });
 
@@ -211,7 +216,8 @@ public class BoletoView {
         TableView<Boleto> boletosTable = new TableView<>();
 
         TableColumn<Boleto, String> colNmrDoc = new TableColumn<>("Nº Doc");
-        colNmrDoc.setCellValueFactory(cellData -> new SimpleStringProperty(String.valueOf(cellData.getValue().getNumeroDocumento())));
+        // USA O ID PRIMÁRIO DO JPA
+        colNmrDoc.setCellValueFactory(cellData -> new SimpleStringProperty(String.valueOf(cellData.getValue().getId())));
 
         TableColumn<Boleto, String> colValor = new TableColumn<>("Valor");
         colValor.setCellValueFactory(cellData -> new SimpleStringProperty((String.format("%.2f", cellData.getValue().getValor()))));
@@ -240,6 +246,7 @@ public class BoletoView {
         return boletosTable;
     }
 
+    // MÉTODO 'criarMenuNavegacao' REINSERIDO PARA RESOLVER O ERRO
     private HBox criarMenuNavegacao() {
         HBox navBar = new HBox(15);
         navBar.setStyle("-fx-padding: 10; -fx-alignment: center; -fx-background-color: lightgrey;");
@@ -260,7 +267,6 @@ public class BoletoView {
         btnBoletos.setStyle(styleBtn);
         btnBoletos.setOnAction(e -> this.mostrar());
 
-        // Adicione aqui os outros botões quando tiver as telas prontas
         Button btnLojas = new Button("Lojas");
         btnLojas.setStyle(styleBtn);
         btnLojas.setOnAction(e -> new LojaView(stage).mostrar());
@@ -273,6 +279,7 @@ public class BoletoView {
         return navBar;
     }
 
+    // MÉTODO 'exibirAlerta' REINSERIDO PARA RESOLVER O ERRO
     private void exibirAlerta(Alert.AlertType tipo, String titulo, String conteudo) {
         Alert alerta = new Alert(tipo);
         alerta.setTitle(titulo);
@@ -282,17 +289,6 @@ public class BoletoView {
     }
 
     private void atualizarTabelaBoletos() {
-        boletosObservable.setAll(ArquivoBoleto.lerLista(contrato.getContratoId()));
-        // A TableView se atualizará automaticamente pois está vinculada (bound) a boletosObservable
+        boletosObservable.setAll(boletoDAO.buscarPorContrato(contrato.getContratoId()));
     }
-
-
-
-
-
-
-
-
-
-
 }

@@ -1,5 +1,6 @@
 package br.pucpr.crud_java.models;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -11,18 +12,28 @@ import java.io.Serializable;
 @Entity
 public class Locatario implements Serializable {
     @Serial
-    private static final long serialVersionUID = 1L;
+    public static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private String locatarioCnpj;
-    private String locatarioNome;
-    private String locatarioTelefone;
-    private String locatarioEmail;
+    public Long id;
+
+    // Garante que o CNPJ é único no banco de dados (Regra de Negócio)
+    @Column(unique = true)
+    public String locatarioCnpj;
+
+    public String locatarioNome;
+    public String locatarioTelefone;
+    public String locatarioEmail;
 
     public Locatario() {
     }
+
+
+    public Long getId() {
+        return id;
+    }
+
 
     public String getLocatarioCnpj() {
         return locatarioCnpj;

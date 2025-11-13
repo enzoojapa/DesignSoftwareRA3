@@ -1,5 +1,6 @@
 package br.pucpr.crud_java.models;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,22 +16,28 @@ public class Loja implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private String lojaNome;
-    private String lojaTelefone;
-    private String lojaTipo;
+    public Long id;
+
+    // OTIMIZAÇÃO: Garante que o nome da loja é único no banco de dados.
+    @Column(unique = true)
+    public String lojaNome;
+    public String lojaTelefone;
+    public String lojaTipo;
 
     public Loja() {
     }
 
+
+
+    public Long getId() {
+        return id;
+    }
     @Override
     public String toString() {
         return "Nome: " + this.lojaNome +
                 "\nTelefone: " + this.lojaTelefone +
                 "\nTipo: " + this.lojaTipo + "\n";
     }
-
-
 
     public String getLojaNome() {
         return lojaNome;
@@ -47,7 +54,6 @@ public class Loja implements Serializable {
     public void setLojaTelefone(String lojaTelefone) {
         this.lojaTelefone = lojaTelefone;
     }
-
 
     public String getLojaTipo() {
         return lojaTipo;

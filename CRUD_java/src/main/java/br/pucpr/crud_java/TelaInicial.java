@@ -1,4 +1,4 @@
-package br.pucpr.crud_java;
+package br.pucpr.crud_java; // Se você quiser mantê-la aqui
 
 import br.pucpr.crud_java.views.*;
 import javafx.geometry.Pos;
@@ -12,7 +12,7 @@ import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 public class TelaInicial {
-    private Stage stage;
+    private final Stage stage; // Alterado para final
 
     public TelaInicial(Stage stage) {
         this.stage = stage;

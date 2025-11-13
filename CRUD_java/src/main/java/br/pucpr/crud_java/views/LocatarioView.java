@@ -3,8 +3,7 @@ package br.pucpr.crud_java.views;
 import br.pucpr.crud_java.TelaInicial;
 import br.pucpr.crud_java.alerts.Alerts;
 import br.pucpr.crud_java.models.Locatario;
-import br.pucpr.crud_java.persistencias.ArquivoContrato;
-import br.pucpr.crud_java.persistencias.ArquivoLocatario;
+import br.pucpr.crud_java.persistencias.LocatarioDAO;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -14,25 +13,37 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import java.util.List;
 
 public class LocatarioView {
-    private Stage stage;
-    private ObservableList<Locatario> locatariosObservable = FXCollections.observableArrayList();
+    private final Stage stage;
+    private final ObservableList<Locatario> locatariosObservable = FXCollections.observableArrayList();
 
-    public LocatarioView(Stage stage) { this.stage = stage; }
+    // NOVO: Instância do DAO JPA
+    private final LocatarioDAO locatarioDAO;
+
+    public LocatarioView(Stage stage) {
+        this.stage = stage;
+        this.locatarioDAO = new LocatarioDAO(); // Inicializa o DAO
+    }
 
     public void mostrar() {
         criarUI();
         this.stage.show();
     }
 
+    private void atualizarTabelaLocatarios() {
+        // NOVO: Usa o método JPA de busca
+        List<Locatario> locatarios = locatarioDAO.buscarTodos();
+        locatariosObservable.setAll(locatarios);
+    }
+
+
     private void criarUI() {
         stage.setTitle("Gestão de Locatários");
 
-
-        locatariosObservable.setAll(ArquivoLocatario.lerLista());
-
-
+        // CORRIGIDO: Usa o método JPA de busca ao invés do lerLista() estático
+        atualizarTabelaLocatarios();
 
         BorderPane borderPane = new BorderPane();
         borderPane.setStyle("-fx-padding: 10;");
@@ -68,7 +79,8 @@ public class LocatarioView {
         Button btnAtualizar = new Button("Atualizar página");
         btnAtualizar.setMaxWidth(Double.MAX_VALUE);
         btnAtualizar.setOnAction(e -> {
-            locatariosObservable.setAll(ArquivoLocatario.lerLista());
+            // CORRIGIDO: Usa o método JPA de atualização
+            atualizarTabelaLocatarios();
         });
 
         painelFormulario.getChildren().addAll(labelCNPJ, txtCNPJ, labelNome, txtNome, labelEmail, txtEmail, labelTelefone, txtTelefone, btnCadastrar, btnAtualizar);
@@ -91,21 +103,19 @@ public class LocatarioView {
                 String email = txtEmail.getText();
                 String nome = txtNome.getText();
 
+                // ... (Validações de campos existentes) ...
                 if (cnpj.isEmpty() || cnpj.length() < 18) {
                     Alerts.alertError("Erro de Validação", "O CNPJ deve ser preenchido completamente.");
                     return;
                 }
-
                 if (nome.isEmpty()) {
                     Alerts.alertError("Erro de Validação", "O Nome da empresa não pode ser vazio.");
                     return;
                 }
-
                 if (email.isEmpty() || !email.contains("@")) {
                     Alerts.alertError("Erro de Validação", "Insira um e-mail válido");
                     return;
                 }
-
                 if (telefone.isEmpty() || telefone.length() < 14) {
                     Alerts.alertError("Erro de Validação", "O Telefone deve ser preenchido completamente.");
                     return;
@@ -117,29 +127,43 @@ public class LocatarioView {
                 novoLocatario.setLocatarioEmail(email);
                 novoLocatario.setLocatarioTelefone(telefone);
 
-                if (ArquivoLocatario.adicionarLocatario(novoLocatario)) {
-                    locatariosObservable.add(novoLocatario);
-                    txtCNPJ.clear();
-                    txtNome.clear();
-                    txtEmail.clear();
-                    txtTelefone.clear();
-                    Alerts.alertInfo("Sucesso", "Locatário cadastrado com sucesso!");
-                } else {
-                    Alerts.alertError("Erro", "CNPJ já cadastrado. Locatário não adicionado.");
-                    txtCNPJ.clear();
-                }
+                // CORRIGIDO: Usa o DAO JPA para salvar. Não retorna mais boolean.
+                locatarioDAO.salvar(novoLocatario);
+
+                // Se o salvamento for bem-sucedido, atualiza a tabela
+                atualizarTabelaLocatarios();
+
+                txtCNPJ.clear();
+                txtNome.clear();
+                txtEmail.clear();
+                txtTelefone.clear();
+                Alerts.alertInfo("Sucesso", "Locatário cadastrado com sucesso!");
+
+            } catch (RuntimeException ex) {
+                // NOVO: Captura exceções do JPA/DAO (como CNPJ duplicado)
+                Alerts.alertError("Erro de Persistência", "Falha ao cadastrar: " + ex.getMessage());
+                txtCNPJ.clear(); // Limpa o CNPJ que causou o erro
             } catch (Exception ex) {
+                // Captura outras exceções não tratadas.
             }
         });
 
         btnRemover.setOnAction(e -> {
             Locatario locatarioSelecionado = locatarioTable.getSelectionModel().getSelectedItem();
             if (locatarioSelecionado != null) {
-                ArquivoLocatario.removerLocatario(locatarioSelecionado.getLocatarioCnpj());
-                locatariosObservable.remove(locatarioSelecionado);
-                Alerts.alertInfo("Removido","Locatário removido com sucesso");
+                try {
+                    // CORRIGIDO: Usa o DAO JPA para remover pelo CNPJ
+                    locatarioDAO.remover(locatarioSelecionado.getLocatarioCnpj());
+
+                    locatariosObservable.remove(locatarioSelecionado); // Remove da lista local
+                    Alerts.alertInfo("Removido","Locatário removido com sucesso");
+
+                } catch (RuntimeException ex) {
+                    // NOVO: Captura exceções do JPA/DAO (ex: Locatário com Contratos ativos)
+                    Alerts.alertError("Erro de Persistência", "Falha ao remover: " + ex.getMessage());
+                }
             } else {
-                Alerts.alertError("Erro", "Erro ao remover locatário!");
+                Alerts.alertError("Erro", "Selecione um locatário para remover!");
             }
         });
 
@@ -149,15 +173,16 @@ public class LocatarioView {
                 Locatario locatarioSelecionado =
                         locatarioTable.getSelectionModel().getSelectedItem();
                 if (locatarioSelecionado != null){
+                    // Presumindo que ModalLocatarioEdit usa locatarioDAO.salvar() internamente
                     new ModalLocatarioEdit(locatarioSelecionado).mostrar();
-                    locatariosObservable.setAll(ArquivoLocatario.lerLista());
+
+                    // CORRIGIDO: Usa o método JPA para atualização após o modal fechar
+                    atualizarTabelaLocatarios();
                 } else {
-                    Alerts.alertError("Erro", "Selecione um locatário para " +
-                            "editar");
+                    Alerts.alertError("Erro", "Selecione um locatário para editar");
                 }
             } catch (NullPointerException ex){
-                Alerts.alertError("Erro",
-                        "Nenhum locatário selecionado. Erro: " + ex.getMessage());
+                Alerts.alertError("Erro", "Nenhum locatário selecionado. Erro: " + ex.getMessage());
             }
         });
 
@@ -166,6 +191,8 @@ public class LocatarioView {
         Scene cena = new Scene(borderPane, 900, 600);
         this.stage.setScene(cena);
     }
+
+    // ... (O restante dos métodos auxiliares, como criarTabelaLocatarios, criarMenuNavegacao, adicionarMascaraTelefone e adicionarMascaraCnpj) ...
 
     private TableView<Locatario> criarTabelaLocatarios() {
         TableView<Locatario> table = new TableView<>(locatariosObservable);
@@ -219,7 +246,6 @@ public class LocatarioView {
         navBar.getChildren().addAll(btnHome, btnLocatarios, btnContratos, btnLojas, btnEspacos);
         return navBar;
     }
-
 
     private void adicionarMascaraTelefone(TextField textField) {
         textField.textProperty().addListener((observable, oldValue, newValue) -> {

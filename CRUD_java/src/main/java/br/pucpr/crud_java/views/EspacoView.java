@@ -3,8 +3,7 @@ package br.pucpr.crud_java.views;
 import br.pucpr.crud_java.TelaInicial;
 import br.pucpr.crud_java.alerts.Alerts;
 import br.pucpr.crud_java.models.Espaco;
-import br.pucpr.crud_java.persistencias.ArquivoContrato;
-import br.pucpr.crud_java.persistencias.ArquivoEspaco;
+import br.pucpr.crud_java.persistencias.EspacoDAO; // O EspacoDAO JPA
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
@@ -16,15 +15,20 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
+import java.util.List;
 
 import static javafx.collections.FXCollections.observableArrayList;
 
 public class EspacoView {
-    private Stage stage;
-    private ObservableList<Espaco> espacosObservable = observableArrayList();
+    private final Stage stage;
+    private final ObservableList<Espaco> espacosObservable = observableArrayList();
+
+    // NOVO: Instância do DAO JPA
+    private final EspacoDAO espacoDAO;
 
     public EspacoView(Stage stage) {
         this.stage = stage;
+        this.espacoDAO = new EspacoDAO(); // Inicializa o DAO
     }
 
     public void mostrar() {
@@ -32,9 +36,18 @@ public class EspacoView {
         this.stage.show();
     }
 
+    private void atualizarTabelaEspacos() {
+        // NOVO: Usa o método JPA de busca
+        List<Espaco> espacos = espacoDAO.buscarTodos();
+        espacosObservable.setAll(espacos);
+    }
+
     private void criarUI() {
         stage.setTitle("Gestão de espaços");
-        espacosObservable.setAll(ArquivoEspaco.lerLista());
+
+        // CORRIGIDO: Usa o método JPA de busca
+        atualizarTabelaEspacos();
+
         BorderPane borderPane = new BorderPane();
         borderPane.setStyle("-fx-padding: 10;");
 
@@ -68,7 +81,8 @@ public class EspacoView {
         Button btnAtualizar = new Button("Atualizar página");
         btnAtualizar.setMaxWidth(Double.MAX_VALUE);
         btnAtualizar.setOnAction(e -> {
-            espacosObservable.setAll(ArquivoEspaco.lerLista());
+            // CORRIGIDO: Usa o método JPA de atualização
+            atualizarTabelaEspacos();
         });
 
         painelFormulario.getChildren().addAll(labelArea, txtArea, labelPiso, txtPiso, btnCad, btnAtualizar);
@@ -90,15 +104,24 @@ public class EspacoView {
 
         btnCad.setOnAction(e -> {
             try {
-                double area = Double.parseDouble(txtArea.getText());
+                // Tratamento de área com vírgula para double
+                String areaTexto = txtArea.getText().replace(",", ".");
+                double area = Double.parseDouble(areaTexto);
+
                 int piso = Integer.parseInt(txtPiso.getText());
 
                 if (area <= 0 || (piso != 1 && piso != 2)) {
                     throw new IllegalArgumentException("Preencha todos os campos corretamente!\n(Área > 0 e Piso = 1 ou 2)");
                 }
 
-                ArquivoEspaco.adicionarEspaco(piso, area);
-                espacosObservable.setAll(ArquivoEspaco.lerLista()); // Atualiza a tabela
+                // NOVO: Cria o objeto Espaco e usa o DAO JPA para salvar
+                Espaco novoEspaco = new Espaco();
+                novoEspaco.setArea(area);
+                novoEspaco.setPiso(piso);
+
+                espacoDAO.salvar(novoEspaco); // Método salvar() do DAO JPA
+
+                atualizarTabelaEspacos(); // Atualiza a tabela com o JPA
                 txtArea.clear();
                 txtPiso.clear();
                 Alerts.alertInfo("Sucesso", "Espaço cadastrado com sucesso!");
@@ -107,6 +130,9 @@ public class EspacoView {
                 Alerts.alertError("Erro de Formato", "Verifique se a área e o piso são números válidos.");
             } catch (IllegalArgumentException ex) {
                 Alerts.alertError("Erro de Validação", ex.getMessage());
+            } catch (RuntimeException ex) {
+                // NOVO: Captura exceções do JPA/DAO
+                Alerts.alertError("Erro de Persistência", "Falha ao salvar o espaço: " + ex.getMessage());
             }
         });
 
@@ -117,10 +143,12 @@ public class EspacoView {
                 return;
             }
 
+            // Presumindo que ModalEspacoEdit usará espacoDAO.salvar() internamente
             ModalEspacoEdit modal = new ModalEspacoEdit(this.stage, espacoSelecionado);
             modal.mostrar();
 
-            espacosObservable.setAll(ArquivoEspaco.lerLista());
+            // CORRIGIDO: Atualiza a tabela após a edição com o JPA
+            atualizarTabelaEspacos();
         });
 
         btnRemover.setOnAction(e -> {
@@ -131,12 +159,19 @@ public class EspacoView {
             }
 
             Alert confirmacao = new Alert(Alert.AlertType.CONFIRMATION, "Tem certeza?", ButtonType.YES, ButtonType.NO);
+            // Usa getId() do JPA
             confirmacao.setHeaderText("Remover o espaço de ID '" + espacoSelecionado.getId() + "'?");
             confirmacao.showAndWait().ifPresent(resposta -> {
                 if (resposta == ButtonType.YES) {
-                    ArquivoEspaco.excluirEspaco(espacoSelecionado.getId());
-                    espacosObservable.setAll(ArquivoEspaco.lerLista()); // Atualiza a tabela
-                    Alerts.alertInfo("Sucesso", "Espaço removido.");
+                    try {
+                        // CORRIGIDO: Usa o método remover(id) do DAO JPA
+                        espacoDAO.excluir(espacoSelecionado.getId());
+                        atualizarTabelaEspacos(); // Atualiza a tabela com o JPA
+                        Alerts.alertInfo("Sucesso", "Espaço removido.");
+                    } catch (RuntimeException ex) {
+                        // NOVO: Captura exceções do JPA/DAO
+                        Alerts.alertError("Erro de Persistência", "Falha ao remover o espaço: " + ex.getMessage());
+                    }
                 }
             });
         });
@@ -149,8 +184,11 @@ public class EspacoView {
         TableView<Espaco> table = new TableView<>(espacosObservable);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+
+        // Assumindo que o getId() retorna Long
         TableColumn<Espaco, String> colId = new TableColumn<>("ID");
         colId.setCellValueFactory(cell -> new SimpleStringProperty(String.valueOf(cell.getValue().getId())));
+
         TableColumn<Espaco, String> colArea = new TableColumn<>("Área (m²)");
         colArea.setCellValueFactory(cell -> new SimpleStringProperty(String.format("%.2f", cell.getValue().getArea())));
         TableColumn<Espaco, String> colPiso = new TableColumn<>("Piso");
@@ -159,6 +197,7 @@ public class EspacoView {
         return table;
     }
 
+    // ... (O método criarMenuNavegacao não precisou de alterações no conteúdo, apenas se baseia em outras views)
     private HBox criarMenuNavegacao() {
         HBox navBar = new HBox(15);
         navBar.setStyle("-fx-padding: 10; -fx-alignment: center; -fx-background-color: lightgrey;");

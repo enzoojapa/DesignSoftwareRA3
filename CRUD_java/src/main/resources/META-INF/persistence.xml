@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<persistence xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd" version="2.0">
-    <persistence-unit name="SistemaGestaoPU" transaction-type="RESOURCE_LOCAL">
+<persistence version="3.0"
+             xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd">
+    <persistence-unit name="crud-java-pu" transaction-type="RESOURCE_LOCAL">
         <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
-            <class>br.pucpr.crud_java.models.Boleto</class>
-            <class>br.pucpr.crud_java.models.Contrato</class>
-            <class>br.pucpr.crud_java.models.Espaco</class>
-            <class>br.pucpr.crud_java.models.Locatario</class>
-            <class>br.pucpr.crud_java.models.Loja</class>
-        <exclude-unlisted-classes>false</exclude-unlisted-classes>
 
+        <class>br.pucpr.crud_java.models.Boleto</class>
+        <class>br.pucpr.crud_java.models.Contrato</class>
+        <class>br.pucpr.crud_java.models.Espaco</class>
+        <class>br.pucpr.crud_java.models.Locatario</class>
+        <class>br.pucpr.crud_java.models.Loja</class>
 
         <properties>
             <property name="jakarta.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
-            <property name="jakarta.persistence.jdbc.url" value="jdbc:mysql://localhost/sistema?createDatabaseIfNotExist=true"/>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/sistema"/>
             <property name="jakarta.persistence.jdbc.user" value="root"/>
-            <!-- <property name="jakarta.persistence.jdbc.password" value="12345"/> -->
+            <property name="jakarta.persistence.jdbc.password" value=""/>
 
-	        <property name="eclipselink.logging.level" value="FINE" />
-			<property name="eclipselink.ddl-generation" value="create-tables" />
-			<property name="eclipselink.ddl-generation.output-mode" value="database" />
-
+            <property name="eclipselink.ddl-generation" value="create-or-extend-tables"/>
+            <property name="eclipselink.logging.level" value="WARNING"/>
+            <property name="eclipselink.weaving" value="static"/>
         </properties>
     </persistence-unit>
 </persistence>

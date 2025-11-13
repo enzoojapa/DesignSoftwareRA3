@@ -2,48 +2,47 @@ package br.pucpr.crud_java.views;
 
 import br.pucpr.crud_java.alerts.Alerts;
 import br.pucpr.crud_java.models.Locatario;
-import br.pucpr.crud_java.persistencias.ArquivoLocatario;
+import br.pucpr.crud_java.persistencias.LocatarioDAO; // O LocatarioDAO JPA
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality; // Importante para modais
 import javafx.stage.Stage;
 
-
 public class ModalLocatarioEdit {
-    private Stage stage;
-    private Scene cena;
-    private Locatario locatario;
+
+    private final Stage modalStage; // NOVO: Nome alterado para evitar confusão com o stage principal
+    private final Locatario locatario;
+    private final LocatarioDAO locatarioDAO; // NOVO: Instância do DAO JPA
 
     public ModalLocatarioEdit(Locatario locatario){
         this.locatario = locatario;
+        this.modalStage = new Stage(); // Inicializa o novo Stage
+        this.locatarioDAO = new LocatarioDAO(); // Inicializa o DAO
+
+        // Configurações do modal
+        this.modalStage.initModality(Modality.APPLICATION_MODAL);
+        this.modalStage.setTitle("Editar Locatário: " + locatario.getLocatarioNome());
     }
 
     public void mostrar(){
         criarUI();
-        stage.showAndWait();
+        modalStage.showAndWait();
     }
 
     private void criarUI() {
-        this.stage = new Stage();
-        Button btnVoltar = new Button("Voltar");
-        btnVoltar.setOnAction(e -> {
-            this.stage.close();
-        });
+
         VBox camposBol = new VBox();
         camposBol.setStyle("-fx-padding: 10;");
         camposBol.setSpacing(5);
 
-
-
-
-
-
+        // O CNPJ é a chave de negócio única e não deve ser alterada facilmente
         Label labelCNPJ = new Label("CNPJ da Empresa");
         TextField txtCNPJ = new TextField(String.valueOf(locatario.getLocatarioCnpj()));
         txtCNPJ.setPromptText("Digite o CNPJ");
-        txtCNPJ.setEditable(false);
+        txtCNPJ.setEditable(false); // Mantido como não editável para segurança
 
         Label labelNome = new Label("Nome da Empresa");
         TextField txtNome = new TextField(String.valueOf(locatario.getLocatarioNome()));
@@ -58,56 +57,58 @@ public class ModalLocatarioEdit {
         txtTelefone.setPromptText("(XX) XXXXX-XXXX");
         adicionarMascaraTelefone(txtTelefone);
 
-        Button btnCadastrar = new Button("Cadastrar Locatário");
-        btnCadastrar.setMaxWidth(Double.MAX_VALUE);
-
         Button btnEditar = new Button("Salvar");
+        btnEditar.setMaxWidth(Double.MAX_VALUE);
+
         btnEditar.setOnAction(e -> {
-                    try {
-                        String cnpj = txtCNPJ.getText();
-                        String nome = txtNome.getText();
-                        String email = txtEmail.getText();
-                        String telefone = txtTelefone.getText();
+            try {
+                String nome = txtNome.getText();
+                String email = txtEmail.getText();
+                String telefone = txtTelefone.getText();
 
-                        if (nome.isEmpty()) {
-                            Alerts.alertError("Erro de Validação", "O Nome da empresa não pode ser vazio.");
-                            return;
-                        }
-
-                        if (email.isEmpty() || !email.contains("@")) {
-                            Alerts.alertError("Erro de Validação", "Insira um e-mail válido");
-                            return;
-                        }
-
-                        if (telefone.isEmpty() || telefone.length() < 14) {
-                            Alerts.alertError("Erro de Validação", "O Telefone deve ser preenchido completamente.");
-                            return;
-                        }
-                        if (email != "" && telefone != "") {
-
-                            ArquivoLocatario.editarLocatario(cnpj, nome, email, telefone);
-
-                            Alerts.alertInfo("Editado",
-                                    "Locatário editado com sucesso");
-
-                            this.stage.close();
-                        } else {
-                            Alerts.alertError("Erro", "Preencha os campos " +
-                                    "corretamente");
-                        }
-                    } catch (NumberFormatException ex) {
-                        Alerts.alertError("Erro", "Insira dados válidos!");
-                    }
+                // Validações de campos obrigatórios
+                if (nome.isEmpty()) {
+                    Alerts.alertError("Erro de Validação", "O Nome da empresa não pode ser vazio.");
+                    return;
                 }
-        );
+                if (email.isEmpty() || !email.contains("@")) {
+                    Alerts.alertError("Erro de Validação", "Insira um e-mail válido");
+                    return;
+                }
+                if (telefone.isEmpty() || telefone.length() < 14) {
+                    Alerts.alertError("Erro de Validação", "O Telefone deve ser preenchido completamente.");
+                    return;
+                }
+
+                // 1. ATUALIZA o OBJETO em memória
+                locatario.setLocatarioNome(nome);
+                locatario.setLocatarioEmail(email);
+                locatario.setLocatarioTelefone(telefone);
+
+                // 2. CORRIGIDO: Usa o DAO JPA para salvar. O merge detecta o ID e faz o UPDATE.
+                locatarioDAO.salvar(locatario);
+
+                Alerts.alertInfo("Editado", "Locatário editado com sucesso");
+
+                this.modalStage.close();
+
+            } catch (RuntimeException ex) {
+                // Captura exceções do JPA/DAO (Ex: conflito de unicidade, falha na transação)
+                Alerts.alertError("Erro de Persistência", "Falha ao editar: " + ex.getMessage());
+            }
+        });
+
+        Button btnVoltar = new Button("Cancelar");
+        btnVoltar.setMaxWidth(Double.MAX_VALUE);
+        btnVoltar.setOnAction(e -> this.modalStage.close());
 
         camposBol.getChildren().addAll(labelCNPJ, txtCNPJ, labelNome,
                 txtNome, labelEmail, txtEmail, labelTelefone,
                 txtTelefone,
-                btnEditar);
+                btnEditar, btnVoltar); // Adiciona o botão voltar
 
-        this.cena = new Scene(camposBol, 800, 500);
-        this.stage.setScene(this.cena);
+        Scene cena = new Scene(camposBol, 400, 350); // Tamanho ajustado
+        this.modalStage.setScene(cena);
     }
 
     private void adicionarMascaraTelefone(TextField textField) {

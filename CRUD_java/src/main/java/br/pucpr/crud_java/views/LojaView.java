@@ -2,11 +2,8 @@ package br.pucpr.crud_java.views;
 
 import br.pucpr.crud_java.TelaInicial;
 import br.pucpr.crud_java.alerts.Alerts;
-import br.pucpr.crud_java.models.Boleto;
 import br.pucpr.crud_java.models.Loja;
-import br.pucpr.crud_java.persistencias.ArquivoBoleto;
-import br.pucpr.crud_java.persistencias.ArquivoContrato;
-import br.pucpr.crud_java.persistencias.ArquivoLoja;
+import br.pucpr.crud_java.persistencias.LojaDAO;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,15 +13,19 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import java.util.ArrayList;
+import java.util.List;
 
 public class LojaView {
 
-    private Stage stage;
-    private ObservableList<Loja> lojasObservable = FXCollections.observableArrayList();
+    private final Stage stage;
+    private final ObservableList<Loja> lojasObservable = FXCollections.observableArrayList();
+
+    // NOVO: Instância do DAO JPA
+    private final LojaDAO lojaDAO;
 
     public LojaView(Stage stage) {
         this.stage = stage;
+        this.lojaDAO = new LojaDAO(); // Inicializa o DAO
     }
 
     public void mostrar() {
@@ -32,9 +33,18 @@ public class LojaView {
         this.stage.show();
     }
 
+    // NOVO: Método auxiliar para carregar dados do JPA
+    private void atualizarTabelaLojas() {
+        // Usa o método JPA de busca
+        List<Loja> lojas = lojaDAO.buscarTodos();
+        lojasObservable.setAll(lojas);
+    }
+
     private void criarUI() {
         stage.setTitle("Gestão de Lojas");
-        lojasObservable.setAll(ArquivoLoja.lerLista());
+
+        // CORRIGIDO: Usa o método JPA de busca
+        atualizarTabelaLojas();
 
         BorderPane borderPane = new BorderPane();
         borderPane.setStyle("-fx-padding: 10;");
@@ -67,7 +77,8 @@ public class LojaView {
         Button btnAtualizar = new Button("Atualizar página");
         btnAtualizar.setMaxWidth(Double.MAX_VALUE);
         btnAtualizar.setOnAction(e -> {
-            lojasObservable.setAll(ArquivoLoja.lerLista());
+            // CORRIGIDO: Usa o método JPA de atualização
+            atualizarTabelaLojas();
         });
 
         painelFormulario.getChildren().addAll(labelNome, txtNome, labelTelefone, txtTelefone, labelTipo, cbTipo, btnCadastrar, btnAtualizar);
@@ -98,20 +109,21 @@ public class LojaView {
                     throw new IllegalArgumentException("Preencha todos os campos corretamente!");
                 }
 
-                boolean lojaExistente = lojasObservable.stream().anyMatch(
-                        loja -> loja.getLojaNome().equalsIgnoreCase(nome) || loja.getLojaTelefone().equals(telefone)
-                );
+                // LÓGICA ANTIGA DE CHECAGEM MANUAL REMOVIDA
+                // boolean lojaExistente = lojasObservable.stream().anyMatch(...);
+                // if (lojaExistente) { throw new IllegalArgumentException(...); }
 
-                if (lojaExistente) {
-                    throw new IllegalArgumentException("Já existe uma loja com o mesmo nome ou telefone.");
-                }
 
                 Loja novaLoja = new Loja();
                 novaLoja.setLojaNome(nome);
                 novaLoja.setLojaTelefone(telefone);
                 novaLoja.setLojaTipo(tipo);
-                ArquivoLoja.adicionarLoja(novaLoja);
-                lojasObservable.add(novaLoja);
+
+                // CORRIGIDO: Usa o DAO JPA para salvar. O DAO fará a checagem de unicidade.
+                lojaDAO.salvar(novaLoja);
+
+                // Se salvou com sucesso, atualiza a tabela
+                atualizarTabelaLojas();
 
                 txtNome.clear();
                 txtTelefone.clear();
@@ -119,25 +131,30 @@ public class LojaView {
                 exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Loja cadastrada com sucesso!");
 
             } catch (IllegalArgumentException ex) {
+                // Captura exceções de validação de regra de negócio que o DAO pode lançar
                 exibirAlerta(Alert.AlertType.ERROR, "Erro de Validação", ex.getMessage());
+            } catch (RuntimeException ex) {
+                // NOVO: Captura exceções do JPA/DAO (Ex: Nome ou Telefone duplicado)
+                exibirAlerta(Alert.AlertType.ERROR, "Erro de Persistência", "Falha ao salvar. Detalhes: " + ex.getMessage());
             }
         });
 
 
         btnEditar.setOnAction(e -> {
             try {
-                Loja lojaSelecionado =
+                Loja lojaSelecionada =
                         lojaTable.getSelectionModel().getSelectedItem();
-                if (lojaSelecionado != null){
-                    new ModalLojaEdit(stage, lojaSelecionado).mostrar();
-                    lojasObservable.setAll(ArquivoLoja.lerLista());
+                if (lojaSelecionada != null){
+                    // Presumindo que ModalLojaEdit usará lojaDAO.salvar() internamente
+                    new ModalLojaEdit(stage, lojaSelecionada).mostrar();
+
+                    // CORRIGIDO: Usa o método JPA para atualização após o modal fechar
+                    atualizarTabelaLojas();
                 } else {
-                    Alerts.alertError("Erro", "Selecione uma loja para " +
-                            "editar");
+                    Alerts.alertError("Erro", "Selecione uma loja para editar");
                 }
             } catch (NullPointerException ex){
-                Alerts.alertError("Erro",
-                        "Nenhuma loja selecionada. Erro: " + ex.getMessage());
+                Alerts.alertError("Erro", "Nenhuma loja selecionada. Erro: " + ex.getMessage());
             }
         });
 
@@ -151,11 +168,20 @@ public class LojaView {
             Alert confirmacao = new Alert(Alert.AlertType.CONFIRMATION, "Tem certeza?", ButtonType.YES, ButtonType.NO);
             confirmacao.setHeaderText("Remover a loja '" + lojaSelecionada.getLojaNome() + "'?");
             confirmacao.showAndWait().ifPresent(resposta -> {
-                String lojaNome = lojaSelecionada.getLojaNome();
                 if (resposta == ButtonType.YES) {
-                    ArquivoLoja.removerLoja(lojaNome);
-                    lojasObservable.remove(lojaSelecionada);
-                    exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Loja removida.");
+                    try {
+                        String lojaNome = lojaSelecionada.getLojaNome();
+
+                        // CORRIGIDO: Usa o método remover(nome) do DAO JPA
+                        lojaDAO.remover(lojaNome);
+
+                        lojasObservable.remove(lojaSelecionada);
+                        exibirAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Loja removida.");
+
+                    } catch (RuntimeException ex) {
+                        // NOVO: Captura exceções do JPA/DAO
+                        exibirAlerta(Alert.AlertType.ERROR, "Erro de Persistência", "Falha ao remover a loja: " + ex.getMessage());
+                    }
                 }
             });
         });
@@ -240,4 +266,3 @@ public class LojaView {
         alerta.showAndWait();
     }
 }
-

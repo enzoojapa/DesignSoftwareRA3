@@ -11,14 +11,14 @@ import java.io.Serializable;
 @Entity
 public class Espaco implements Serializable {
     @Serial
-    private static final long serialVersionUIDn = 1L;
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private int piso;
-    private double area;
-    private boolean espacoStatus;
+    public Long id;
+    public int piso;
+    public double area;
+    public boolean espacoStatus;
 
     public Espaco() {
     }

@@ -2,7 +2,7 @@ package br.pucpr.crud_java.views;
 
 import br.pucpr.crud_java.alerts.Alerts;
 import br.pucpr.crud_java.models.Loja;
-import br.pucpr.crud_java.persistencias.ArquivoLoja;
+import br.pucpr.crud_java.persistencias.LojaDAO; // O LojaDAO JPA
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -10,16 +10,23 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality; // Importação adicionada
 import javafx.stage.Stage;
 
 
 public class ModalLojaEdit {
-    private Stage stage;
+    private final Stage stage;
     private final Loja loja;
+    private final LojaDAO lojaDAO; // NOVO: Instância do DAO JPA
 
     public ModalLojaEdit(Stage stageOwner, Loja loja) {
         this.loja = loja;
+        this.lojaDAO = new LojaDAO(); // Inicializa o DAO
+
         this.stage = new Stage();
+        // Configurações do modal
+        this.stage.initOwner(stageOwner);
+        this.stage.initModality(Modality.WINDOW_MODAL);
     }
 
     public void mostrar() {
@@ -28,7 +35,7 @@ public class ModalLojaEdit {
     }
 
     public void criarUI() {
-        stage.setTitle("Editar Loja");
+        stage.setTitle("Editar Loja ID: " + loja.getId()); // Usando o ID do JPA
 
         VBox camposLoja = new VBox();
         camposLoja.setPadding(new Insets(15));
@@ -50,31 +57,40 @@ public class ModalLojaEdit {
         cbTipo.setMaxWidth(Double.MAX_VALUE);
 
         Button btnEditar = new Button("Salvar Alterações");
-
+        btnEditar.setMaxWidth(Double.MAX_VALUE); // Adicionado para consistência
 
         btnEditar.setOnAction(e -> {
             try {
-                String nomeOriginal = loja.getLojaNome();
                 String novoNome = textFieldNomeLoja.getText().trim();
                 String novoTelefone = txtTel.getText().trim();
                 String novoTipo = cbTipo.getValue();
+
                 if (novoNome.isEmpty() || novoTelefone.length() < 14 || novoTipo == null) {
                     throw new IllegalArgumentException("Preencha todos os campos corretamente! O telefone deve estar completo (ex: (XX) XXXXX-XXXX).");
                 }
 
-                ArquivoLoja.editarLoja(nomeOriginal, novoNome, novoTelefone, novoTipo);
+                // 1. ATUALIZA o OBJETO Loja em memória
+                loja.setLojaNome(novoNome);
+                loja.setLojaTelefone(novoTelefone);
+                loja.setLojaTipo(novoTipo);
+
+                // 2. CORRIGIDO: Usa o DAO JPA para salvar. O merge faz o UPDATE.
+                lojaDAO.salvar(loja);
 
                 Alerts.alertInfo("Sucesso", "Loja editada com sucesso!");
                 this.stage.close();
 
             } catch (IllegalArgumentException ex) {
+                // Captura exceções de validação de campo (acima)
                 Alerts.alertError("Erro de Validação", ex.getMessage());
-            } catch (Exception ex) {
-                Alerts.alertError("Erro Inesperado", "Ocorreu um erro inesperado ao tentar editar a loja: " + ex.getMessage());
+            } catch (RuntimeException ex) {
+                // NOVO: Captura exceções do JPA/DAO (Ex: Nome ou Telefone duplicado)
+                Alerts.alertError("Erro de Persistência", "Ocorreu um erro ao editar a loja (Nome ou Telefone pode já existir): " + ex.getMessage());
             }
         });
 
         Button btnVoltar = new Button("Cancelar");
+        btnVoltar.setMaxWidth(Double.MAX_VALUE); // Adicionado para consistência
         btnVoltar.setOnAction(e -> this.stage.close());
 
         camposLoja.getChildren().addAll(

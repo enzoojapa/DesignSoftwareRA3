@@ -2,8 +2,7 @@ package br.pucpr.crud_java.views;
 
 import br.pucpr.crud_java.alerts.Alerts;
 import br.pucpr.crud_java.models.Espaco;
-import br.pucpr.crud_java.persistencias.ArquivoEspaco;
-import javafx.geometry.Insets;
+import br.pucpr.crud_java.persistencias.EspacoDAO; // O EspacoDAO JPA
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -17,15 +16,18 @@ import java.util.regex.Pattern;
 
 public class ModalEspacoEdit {
 
-    private Stage stage;
-    private Espaco espaco;
+    private final Stage stage; // Alterado para final
+    private final Espaco espaco; // Alterado para final
+    private final EspacoDAO espacoDAO; // NOVO: Instância do DAO JPA
 
     public ModalEspacoEdit(Stage stageOwner, Espaco espaco) {
         this.stage = new Stage();
-        stage.initOwner(stageOwner);
-        stage.initModality(Modality.WINDOW_MODAL);
+        // Configuração do modal para ser filho da janela principal
+        this.stage.initOwner(stageOwner);
+        this.stage.initModality(Modality.WINDOW_MODAL);
 
         this.espaco = espaco;
+        this.espacoDAO = new EspacoDAO(); // Inicializa o DAO
     }
 
     public void mostrar() {
@@ -44,6 +46,7 @@ public class ModalEspacoEdit {
         txtId.setEditable(false);
 
         Label labelArea = new Label("Área do espaço (m²)");
+        // Tratamento de formatação: usa Locale (ex: ponto) ao formatar e ao ler
         TextField txtArea = new TextField(String.format("%.2f", espaco.getArea()));
         txtArea.setPromptText("Digite a nova área");
         Pattern pattern = Pattern.compile("\\d*([,.]\\d{0,2})?");
@@ -65,7 +68,9 @@ public class ModalEspacoEdit {
         btnSalvar.setMaxWidth(Double.MAX_VALUE);
         btnSalvar.setOnAction(e -> {
             try {
-                Long id = espaco.getId();
+                // Não precisamos mais declarar o ID, pois ele está no objeto this.espaco
+
+                // Trata vírgula ou ponto ao ler
                 double novaArea = Double.parseDouble(txtArea.getText().replace(',', '.'));
                 int novoPiso = Integer.parseInt(txtPiso.getText());
 
@@ -74,7 +79,12 @@ public class ModalEspacoEdit {
                     return;
                 }
 
-                ArquivoEspaco.editarEspaco(id, novoPiso, novaArea);
+                // 1. ATUALIZA o OBJETO em memória
+                espaco.setPiso(novoPiso);
+                espaco.setArea(novaArea);
+
+                // 2. CORRIGIDO: Usa o DAO JPA para salvar. O merge detecta o ID e faz o UPDATE.
+                espacoDAO.salvar(espaco);
 
                 Alerts.alertInfo("Sucesso", "Espaço editado com sucesso!");
 
@@ -82,6 +92,9 @@ public class ModalEspacoEdit {
 
             } catch (NumberFormatException ex) {
                 Alerts.alertError("Erro de Formato", "Verifique se a área e o piso são números válidos.");
+            } catch (RuntimeException ex) {
+                // NOVO: Captura exceções do JPA/DAO
+                Alerts.alertError("Erro de Persistência", "Falha ao salvar a edição: " + ex.getMessage());
             }
         });
 

@@ -1,53 +1,55 @@
 package br.pucpr.crud_java.models;
-import jakarta.persistence.*;
 
+import jakarta.persistence.*;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-public class Contrato implements Serializable{
+public class Contrato implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private int contratoId;
-    private LocalDate dataInicio;
-    private double valorMensal;
-    private boolean contratoStatus;
-    private ArrayList<Boleto> boletos;
+    public Long id;
+
+    public int contratoId;
+    public LocalDate dataInicio;
+    public double valorMensal;
+    public boolean contratoStatus;
+
+    @OneToMany(mappedBy = "contrato", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Boleto> boletos = new ArrayList<>();
+    private boolean contratoAtivo;
+
     @ManyToOne
     @JoinColumn(name = "locatario_id")
     private Locatario locatario;
 
-    public Contrato() {
+    public Contrato() {}
+
+    // Getters e setters
+    public void setContratoStatus(boolean contratoStatus) {
+        this.contratoStatus = contratoStatus;
     }
 
-    public int getContratoId() {
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public long getContratoId() {
         return contratoId;
     }
 
     public void setContratoId(int contratoId) {
         this.contratoId = contratoId;
-    }
-
-    public Locatario getLocatario() {
-        return locatario;
-    }
-
-    public void setLocatario(Locatario locatario) {
-        this.locatario = locatario;
-    }
-
-    public Locatario getlocatario() {
-        return locatario;
-    }
-
-    public void setNomeLocatario(Locatario locatario) {
-        this.locatario = locatario;
     }
 
     public LocalDate getDataInicio() {
@@ -56,6 +58,14 @@ public class Contrato implements Serializable{
 
     public void setDataInicio(LocalDate dataInicio) {
         this.dataInicio = dataInicio;
+    }
+
+    public boolean isContratoAtivo() {
+        return contratoAtivo;
+    }
+
+    public void setContratoAtivo(boolean contratoAtivo) {
+        this.contratoAtivo = contratoAtivo;
     }
 
     public double getValorMensal() {
@@ -70,19 +80,24 @@ public class Contrato implements Serializable{
         return contratoStatus;
     }
 
-    public void setContratoStatus(boolean contratoStatus) {
-        contratoStatus = contratoStatus;
-    }
-
-    public boolean isAtivo() {
-        return contratoStatus;
-    }
-
-    public ArrayList<Boleto> getBoletos() {
+    public List<Boleto> getBoletos() {
         return boletos;
     }
 
-    public void setBoletos(ArrayList<Boleto> boletos) {
+    public void setBoletos(List<Boleto> boletos) {
         this.boletos = boletos;
     }
+
+    public Locatario getLocatario() {
+        return locatario;
+    }
+
+    public void setLocatario(Locatario locatario) {
+        this.locatario = locatario;
+    }
+
+    public boolean isAtivo() {
+        return contratoAtivo;
+    }
+
 }
