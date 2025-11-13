@@ -2,7 +2,6 @@ package br.pucpr.crud_java.persistencias;
 
 import br.pucpr.crud_java.models.Funcionario;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
 import java.util.List;
 
 public class FuncionarioDAO {
