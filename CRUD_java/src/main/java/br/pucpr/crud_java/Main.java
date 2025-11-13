@@ -5,7 +5,6 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 
 import jakarta.persistence.EntityManagerFactory;
-import java.io.IOException;
 
 public class Main extends Application {
 
@@ -27,12 +26,11 @@ public class Main extends Application {
     }
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
+    public void start(Stage primaryStage) {
 
         // 2. INICIALIZAÇÃO DO JPA (Antes de carregar qualquer UI)
         System.out.println("Iniciando JPA e configurando a conexão com o banco...");
         try {
-            EntityManagerFactory emf = JPAUtil.getEntityManagerFactory();
             System.out.println("JPA inicializado com sucesso!");
         } catch (Exception e) {
             System.err.println("ERRO DE CONEXÃO: Falha ao iniciar o JPA. Verifique o persistence.xml e o banco.");
